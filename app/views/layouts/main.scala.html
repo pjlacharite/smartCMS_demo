@@ -1,0 +1,25 @@
+@(title: String)(head: Html)(content: Html)
+
+@import tools._
+@import tags._
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>@msg(title)</title>
+        <script type="text/javascript" src="/public/javascripts/jquery-1.9.0.min.js"></script>
+        @**<script type="text/javascript" src="@routes.Application.jsRoutes()"></script>**@
+        
+        @head
+        
+    </head>
+    <body>
+        
+        <header>
+            <a href="@routes.Application.index" id="logo">Home</a>
+        </header>
+    
+        @content
+        
+    </body>
+</html>

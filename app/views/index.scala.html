@@ -1,0 +1,15 @@
+@(message: String)
+
+@import tools._
+@import layouts._
+@import tags._
+
+
+@head = {}
+
+@main("Home page")(head) {
+    <h1>Demo Solr</h1>
+    
+    hello : @message
+}
+
