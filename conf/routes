@@ -5,5 +5,16 @@
 # Home page
 GET     /                           controllers.Application.index()
 
+#Demo setup
+GET     /setup                      controllers.Application.setupDemo()
+
+# Login page
+GET     /login                      controllers.Application.login()
+POST    /login                      controllers.Application.authenticate()
+
+#Content page
+
+#Suggestion page
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
