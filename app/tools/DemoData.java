@@ -8,6 +8,7 @@ import models.PolopolyUser;
 import models.StandardArticle;
 
 public class DemoData {
+	private static final int contentViewed = 60;
 	private static final String[] articleNames = new String[]{"sausage", "blubber", "pencil", "butt", "moon", "water", "computer", "school", "network", "hammer", "walking",
 	                                 "violently", "mediocre", "literature", "chair", "two", "window", "cords", "musical", "zebra", "xylophone", "penguin", "home", "dog",
 	                                 "final", "ink", "teacher", "fun", "website", "banana", "uncle", "softly", "mega", "ten", "awesome", "attatch", "blue", "internet",
@@ -37,16 +38,18 @@ public class DemoData {
 	
 	private void initializeUsers(){
 		polopolyUsers = new ArrayList<PolopolyUser>();
-		PolopolyUser user1 = new PolopolyUser("bob@gmail.com", "Bob", "secret");
-		PolopolyUser user2 = new PolopolyUser("alice@gmail.com", "Alice", "secret");
+		PolopolyUser user1 = new PolopolyUser("bob@gmail.com", "Bob", "test");
+		PolopolyUser user2 = new PolopolyUser("alice@gmail.com", "Alice", "test");
 		polopolyUsers.add(user1);
 		polopolyUsers.add(user2);
-		if (PolopolyUser.find.where().eq("email", "bob@gmail.com").findList().size() == 0){
-    		user1.save();
+		if (PolopolyUser.find.where().eq("email", "bob@gmail.com").findList().size() > 0){
+			user1.delete();
     	}
-    	if (PolopolyUser.find.where().eq("email", "alice@gmail.com").findList().size() == 0){
-    		user2.save();
+		user1.save();
+    	if (PolopolyUser.find.where().eq("email", "alice@gmail.com").findList().size() > 0){
+    		user2.delete();
     	}
+    	user2.save();
 	}
 	
 	private void initializeCategories(){
@@ -62,12 +65,19 @@ public class DemoData {
 		for (int i = 0; i < articleNames.length; i++){
 			int random1 = (int)Math.floor(Math.random()*categoryNames.length);
 			int random2 = (int)Math.floor(Math.random()*categoryNames.length);
-			StandardArticle article = new StandardArticle(i, articleNames[i], categories.get(random1), categories.get(random2));
+			StandardArticle article = new StandardArticle(String.valueOf(i), articleNames[i], categories.get(random1), categories.get(random2));
 			articleList.add(article);
 		}
 	}
 	
 	private void buildIndex(List<StandardArticle> articles){
-		//Call SolrUtil.index() with Article/Category associated with a User.
+		for (PolopolyUser user : polopolyUsers){
+			for (int i = 0; i < contentViewed; i++){
+				int random = (int)Math.floor(Math.random()*articleList.size());
+				StandardArticle article = articleList.get(random);
+				SolrUtil.indexTracking(article.contentId, article.categories.get(0).name, user.email);
+				SolrUtil.indexTracking(article.contentId, article.categories.get(1).name, user.email);
+			}
+		}
 	}
 }

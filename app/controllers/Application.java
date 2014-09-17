@@ -1,6 +1,14 @@
 package controllers;
 
+import java.util.List;
+
 import models.PolopolyUser;
+
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.FacetField.Count;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+
 import play.data.Form;
 import play.mvc.Controller;
 import play.mvc.Result;
@@ -13,14 +21,27 @@ public class Application extends Controller {
 
 	@Security.Authenticated(Secured.class)
     public static Result index() {
-		SolrUtil.index("test", "val2");
-        int nbHits = SolrUtil.getHits("test", "val2");
-        
         PolopolyUser user = PolopolyUser.find.where().eq("email", (request().username())).findUnique();
+        QueryResponse response = SolrUtil.getCategoriesQuery(user.email);
+        
+        for (SolrDocument doc : response.getResults()){
+    		System.out.println(doc);
+    	}
+        List<FacetField> facetFieldList = response.getFacetFields();
+    	for (FacetField ff : facetFieldList){
+    		System.out.println(ff.getName()+":");
+    		List<Count> vals = ff.getValues();
+    		if (vals!=null){
+    		  for (Count val : vals){
+    			System.out.println(val.getName()+"("+val.getCount()+")");
+    		  }
+    		}
+    	}
+    	
         //Retrieve Each content category count consumed by this user for display purpose
         //Retrieve a static number of content consumed by another user that were not consumed by this one and that represent his consumption habits (based on the category with the most hits).
         
-        return ok(views.html.index.render(String.valueOf(nbHits), user));
+        return ok(views.html.index.render(String.valueOf(response.getResults().size()), user));
     }
     
     public static Result login() {
