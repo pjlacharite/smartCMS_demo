@@ -1,5 +1,6 @@
 package tools;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -24,8 +25,8 @@ public class SolrUtil {
             document.addField("id", uuid);
             document.addField(key + "_ss", value);
             UpdateResponse response = solr.add(document);
+            response.getStatus();
             solr.commit();
-
         } catch (Exception e) {
             System.out.println("index error : " + e.getMessage());
         }
@@ -59,4 +60,15 @@ public class SolrUtil {
         return ret;
 
     }
+    
+    public static void clearIndex(){
+    	try {
+			solr.deleteByQuery("*:*");
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    }
+    
 }

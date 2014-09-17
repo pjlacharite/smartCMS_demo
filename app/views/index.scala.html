@@ -1,4 +1,4 @@
-@(message: String)
+@(nbHits: String, user: PolopolyUser)
 
 @import tools._
 @import layouts._
@@ -7,9 +7,9 @@
 
 @head = {}
 
-@main("Home page")(head) {
+@main(user) {
     <h1>Demo Solr</h1>
     
-    hello : @message
+    hello @user.name . The page was seen @nbHits times
 }
 

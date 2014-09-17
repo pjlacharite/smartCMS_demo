@@ -4,16 +4,23 @@ import models.PolopolyUser;
 import play.data.Form;
 import play.mvc.Controller;
 import play.mvc.Result;
+import play.mvc.Security;
+import tools.DemoData;
 import tools.SolrUtil;
 import views.html.login;
 
 public class Application extends Controller {
 
+	@Security.Authenticated(Secured.class)
     public static Result index() {
-        SolrUtil.index("test", "val2");
-
+		SolrUtil.index("test", "val2");
         int nbHits = SolrUtil.getHits("test", "val2");
-        return ok(views.html.index.render("cette page a été vue : " + nbHits));
+        
+        PolopolyUser user = PolopolyUser.find.where().eq("email", (request().username())).findUnique();
+        //Retrieve Each content category count consumed by this user for display purpose
+        //Retrieve a static number of content consumed by another user that were not consumed by this one and that represent his consumption habits (based on the category with the most hits).
+        
+        return ok(views.html.index.render(String.valueOf(nbHits), user));
     }
     
     public static Result login() {
@@ -21,15 +28,17 @@ public class Application extends Controller {
             login.render(Form.form(Login.class))
         );
     }
-
+    
+    public static Result logout() {
+        session().clear();
+        flash("success", "You've been logged out");
+        return redirect(
+            routes.Application.login()
+        );
+    }
+    
     public static Result setupDemo(){
-    	if (PolopolyUser.find.where().eq("email", "bob@gmail.com").findList().size() == 0){
-    		new PolopolyUser("bob@gmail.com", "Bob", "secret").save();
-    	}
-    	if (PolopolyUser.find.where().eq("email", "alice@gmail.com").findList().size() == 0){
-    		new PolopolyUser("alice@gmail.com", "Alice", "secret").save();
-    	}
-    	
+    	DemoData.getInstance();
     	return redirect(routes.Application.login());
     }
 
