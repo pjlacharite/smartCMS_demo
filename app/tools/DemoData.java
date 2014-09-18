@@ -91,6 +91,7 @@ public class DemoData {
 					if (existingDocument.getFieldValue("id").equals(article.contentId)){
 						document = existingDocument;
 						document.addField("username_ss", user.email);
+						document.setField("userCount_i", Integer.valueOf(document.getFieldValue("userCount_i").toString()) + 1);
 					}
 				}
 				if (document == null){
