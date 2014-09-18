@@ -1,8 +1,10 @@
 package controllers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import models.PolopolyUser;
+import models.StandardArticle;
 
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
@@ -22,10 +24,20 @@ public class Application extends Controller {
 	@Security.Authenticated(Secured.class)
     public static Result index() {
         PolopolyUser user = PolopolyUser.find.where().eq("email", (request().username())).findUnique();
+        return ok(views.html.index.render(user));
+    }
+	
+	@Security.Authenticated(Secured.class)
+    public static Result algo1() {
+        PolopolyUser user = PolopolyUser.find.where().eq("email", (request().username())).findUnique();
         QueryResponse response = SolrUtil.getCategoriesQuery(user.email);
-        
+        System.out.println("Number of document returned by query: " + response.getResults().size());
+        //Top Facet Categories of this user
+        List<StandardArticle> articlesViewed = new ArrayList<StandardArticle>();
         for (SolrDocument doc : response.getResults()){
-    		System.out.println(doc);
+        	System.out.println(doc);
+    		StandardArticle article = DemoData.getInstance().articleList.get(Integer.parseInt(doc.getFieldValue("id").toString().replace("[","").replace("]", "")));
+    		articlesViewed.add(article);
     	}
         List<FacetField> facetFieldList = response.getFacetFields();
     	for (FacetField ff : facetFieldList){
@@ -33,17 +45,68 @@ public class Application extends Controller {
     		List<Count> vals = ff.getValues();
     		if (vals!=null){
     		  for (Count val : vals){
-    			System.out.println(val.getName()+"("+val.getCount()+")");
+    			System.out.println(val.getName()+"("+val.getCount()+")");    			
     		  }
     		}
     	}
-    	
-        //Retrieve Each content category count consumed by this user for display purpose
-        //Retrieve a static number of content consumed by another user that were not consumed by this one and that represent his consumption habits (based on the category with the most hits).
-        
-        return ok(views.html.index.render(String.valueOf(response.getResults().size()), user));
-    }
+
+    	//Top articles viewed by other users with categories matching the top facets
+    	response = SolrUtil.getRecommendedArticle(user.email ,facetFieldList);
+    	facetFieldList = response.getFacetFields();
+    	List<StandardArticle> articlesRecommended = new ArrayList<StandardArticle>();
+    	for (FacetField ff : facetFieldList){
+    		System.out.println("Facet: " + ff.getName()+":");
+    		List<Count> vals = ff.getValues();
+    		if (vals!=null){
+    		  for (Count val : vals){
+    	    		StandardArticle article = DemoData.getInstance().articleList.get(Integer.parseInt(val.getName().replace("[","").replace("]", "")));
+    	    		//Check if this user has already seen the article recommended.
+    	    		if (!articlesViewed.contains(article)){
+    	    			articlesRecommended.add(article);
+    	    		}else{
+    	    			System.out.println("alreadyViewed");
+    	    		}
+    	    		System.out.println("CID: " + article.contentId);
+    	    		System.out.println("CAT1: " + article.categories.get(0).name);
+    	    		System.out.println("CAT2: " + article.categories.get(1).name + "\n");
+    		  }
+    		}
+    	}
+    	System.out.println(articlesRecommended.size());
+    	return ok(views.html.algo1.render(user));
+	}
     
+	@Security.Authenticated(Secured.class)
+    public static Result algo2() {
+		PolopolyUser user = PolopolyUser.find.where().eq("email", (request().username())).findUnique();
+        //Top Facet Categories of this user
+		QueryResponse response = SolrUtil.getCategoriesQuery(user.email);
+		System.out.println("Number of document returned by query: " + response.getResults().size());
+		//Top Facet Categories of this user
+		List<StandardArticle> articlesViewed = new ArrayList<StandardArticle>();
+		for (SolrDocument doc : response.getResults()){
+			System.out.println(doc);
+			StandardArticle article = DemoData.getInstance().articleList.get(Integer.parseInt(doc.getFieldValue("id").toString().replace("[","").replace("]", "")));
+			articlesViewed.add(article);
+		}
+		List<FacetField> facetFieldList = response.getFacetFields();
+		for (FacetField ff : facetFieldList){
+			System.out.println(ff.getName()+":");
+			List<Count> vals = ff.getValues();
+			if (vals!=null){
+			  for (Count val : vals){
+				System.out.println(val.getName()+"("+val.getCount()+")");    			
+			  }
+			}
+		}
+		//Top Facet Users with the matching top Facet categories
+		response = SolrUtil.getMatchingUsers(user.email, facetFieldList);
+		
+		
+		//Top Articles viewed by these top facet users
+        return ok(views.html.algo2.render(user));
+	}
+	
     public static Result login() {
         return ok(
             login.render(Form.form(Login.class))
@@ -59,7 +122,7 @@ public class Application extends Controller {
     }
     
     public static Result setupDemo(){
-    	DemoData.getInstance();
+    	DemoData.getInstance().initializeData();
     	return redirect(routes.Application.login());
     }
 

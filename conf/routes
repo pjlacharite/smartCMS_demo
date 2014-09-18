@@ -15,7 +15,9 @@ POST    /login                      controllers.Application.authenticate()
 # Logout page
 GET     /logout                     controllers.Application.logout()
 
-#Content page
+#Algo pages
+GET     /algo1                      controllers.Application.algo1()
+GET     /algo2                      controllers.Application.algo2()
 
 #Suggestion page
 

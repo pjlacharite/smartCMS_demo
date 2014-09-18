@@ -3,6 +3,8 @@ package tools;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.common.SolrInputDocument;
+
 import models.Category;
 import models.PolopolyUser;
 import models.StandardArticle;
@@ -19,37 +21,44 @@ public class DemoData {
 	                                 "silently", "tawesomated", "joshing", "pong"};
 	
 	private static final String[] categoryNames = new String[]{"action", "horror", "comedy", "drama", "fiction", "foreign", "bollywood", "children", "film noir", "thriller"};
+	
+	private static final String[] userNames = new String[]{"Alice","Bob","Charlie","Dave", "Erin", "Francis", "George", "Harry", "Ingrid", "John"};
+	
 	private static DemoData instance;
-	private static List<StandardArticle> articleList;
-	private static List<Category>  categoryList;
-	private static List<PolopolyUser> polopolyUsers;
+	public List<StandardArticle> articleList;
+	public List<Category>  categoryList;
+	public List<PolopolyUser> polopolyUsers;
 	
 	public static DemoData getInstance(){
 		if (instance == null){
 			instance = new DemoData();
 			SolrUtil.clearIndex();
-			instance.initializeUsers();
-			instance.initializeCategories();
-			instance.initializeArticles(categoryList);
-			instance.buildIndex(articleList);
 		}
 		return instance;
 	}
 	
+	public void initializeData(){
+		System.out.println("Initializing...");
+		System.out.println("Initializing...Users");
+		instance.initializeUsers();
+		System.out.println("Initializing...Categories");
+		instance.initializeCategories();
+		System.out.println("Initializing...Articles");
+		instance.initializeArticles(categoryList);
+		System.out.println("Initializing...Index");
+		instance.buildIndex(articleList);
+	}
+	
 	private void initializeUsers(){
 		polopolyUsers = new ArrayList<PolopolyUser>();
-		PolopolyUser user1 = new PolopolyUser("bob@gmail.com", "Bob", "test");
-		PolopolyUser user2 = new PolopolyUser("alice@gmail.com", "Alice", "test");
-		polopolyUsers.add(user1);
-		polopolyUsers.add(user2);
-		if (PolopolyUser.find.where().eq("email", "bob@gmail.com").findList().size() > 0){
-			user1.delete();
-    	}
-		user1.save();
-    	if (PolopolyUser.find.where().eq("email", "alice@gmail.com").findList().size() > 0){
-    		user2.delete();
-    	}
-    	user2.save();
+		for (int i = 0; i < userNames.length; i++){
+			String name = userNames[i];
+			PolopolyUser user = new PolopolyUser(name.toLowerCase() + "@gmail.com", name, "test");
+			polopolyUsers.add(user);
+			if (PolopolyUser.find.where().eq("email", name.toLowerCase() + "@gmail.com").findList().size() == 0){
+				user.save();
+	    	}
+		}
 	}
 	
 	private void initializeCategories(){
@@ -71,13 +80,25 @@ public class DemoData {
 	}
 	
 	private void buildIndex(List<StandardArticle> articles){
+		//SolrJ seems to lack document update features introduced in Solr4, we have to build all document before indexing them.
+		List<SolrInputDocument> documents = new ArrayList<SolrInputDocument>();
 		for (PolopolyUser user : polopolyUsers){
 			for (int i = 0; i < contentViewed; i++){
 				int random = (int)Math.floor(Math.random()*articleList.size());
 				StandardArticle article = articleList.get(random);
-				SolrUtil.indexTracking(article.contentId, article.categories.get(0).name, user.email);
-				SolrUtil.indexTracking(article.contentId, article.categories.get(1).name, user.email);
+				SolrInputDocument document = null;
+				for (SolrInputDocument existingDocument: documents){
+					if (existingDocument.getFieldValue("id").equals(article.contentId)){
+						document = existingDocument;
+						document.addField("username_ss", user.email);
+					}
+				}
+				if (document == null){
+					document = SolrUtil.createDocument(article.contentId, article.categories, user.email);
+					documents.add(document);
+				}
 			}
 		}
+		SolrUtil.index(documents);
 	}
 }
