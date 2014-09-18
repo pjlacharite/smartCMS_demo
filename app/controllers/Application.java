@@ -1,6 +1,5 @@
 package controllers;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import models.PolopolyUser;
@@ -33,11 +32,8 @@ public class Application extends Controller {
         QueryResponse response = SolrUtil.getCategoriesQuery(user.email);
         //Top Facet Categories of this user
         System.out.println("\n Articles viewed by the user \n");
-        List<StandardArticle> articlesViewed = new ArrayList<StandardArticle>();
         for (SolrDocument doc : response.getResults()){
         	System.out.println(doc);
-    		StandardArticle article = DemoData.getInstance().articleList.get(Integer.parseInt(doc.getFieldValue("id").toString().replace("[","").replace("]", "")));
-    		articlesViewed.add(article);
     	}
         List<FacetField> facetFieldList = response.getFacetFields();
         System.out.println("\n Top facet categories of a user \n");
@@ -53,18 +49,13 @@ public class Application extends Controller {
 
     	//Top articles viewed by other users with categories matching the top facets
     	response = SolrUtil.getRecommendedArticleByCategories(user.email ,facetFieldList);
-    	facetFieldList = response.getFacetFields();
     	System.out.println("\n Top Articles viewed by other users matching the top categories \n");
-    	for (FacetField ff : facetFieldList){
-    		List<Count> vals = ff.getValues();
-    		if (vals!=null){
-    		  for (Count val : vals){
-    	    		StandardArticle article = DemoData.getInstance().articleList.get(Integer.parseInt(val.getName().replace("[","").replace("]", "")));
-    	    		System.out.println("CID: " + article.contentId);
-    	    		System.out.println("CAT1: " + article.categories.get(0).name);
-    	    		System.out.println("CAT2: " + article.categories.get(1).name + "\n");
-    		  }
-    		}
+    	for (SolrDocument doc : response.getResults()){
+        	System.out.println(doc);
+    		StandardArticle article = DemoData.getInstance().articleList.get(Integer.parseInt(doc.getFieldValue("id").toString().replace("[","").replace("]", "")));
+    		System.out.println("CID: " + article.contentId);
+    		System.out.println("CAT1: " + article.categories.get(0).name);
+    		System.out.println("CAT2: " + article.categories.get(1).name + "\n");
     	}
     	return ok(views.html.algo1.render(user));
 	}

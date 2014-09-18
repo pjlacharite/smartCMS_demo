@@ -64,12 +64,13 @@ public class SolrUtil {
      */
     public static QueryResponse getRecommendedArticleByCategories(String username, List<FacetField> categories){
     	SolrQuery query = new SolrQuery();
-    	query.setQuery("*:* NOT username_ss:" + username);
+    	List<Count> counts = categories.get(0).getValues();
+    	//Add weight on the terms according to their facet count
+    	query.setQuery("cat_ss:" + counts.get(0).getName() + "^" + counts.get(0).getCount() + " OR "
+    			+ "cat_ss:" + counts.get(1).getName() + "^" + counts.get(1).getCount() + " OR" 
+    			+ "cat_ss:" + counts.get(2).getName() + "^" + counts.get(2).getCount() + " NOT username_ss:" + username);
     	query.setFields("id");
     	query.addFilterQuery("-username_ss:"+ username);
-    	List<Count> counts = categories.get(0).getValues();
-    	String categoriesFilter = "(" + counts.get(0).getName() + " OR " + counts.get(1).getName() + " OR " + counts.get(2).getName() + ")";
-    	query.addFilterQuery("cat_ss:" + categoriesFilter);
     	query.addFacetField("id");
     	query.setFacetLimit(10);
     	query.set("rows", 10);
@@ -91,12 +92,12 @@ public class SolrUtil {
      */
     public static QueryResponse getRecommendedArticleByUsers(String username, List<FacetField> users){
     	SolrQuery query = new SolrQuery();
-    	query.setQuery("*:* NOT username_ss:" + username);
-    	query.setFields("id, username_ss, cat_ss, userCount_i");
-    	query.addFilterQuery("-username_ss:"+ username);
     	List<Count> counts = users.get(0).getValues();
-    	String categoriesFilter = "(" + counts.get(0).getName() + " OR " + counts.get(1).getName() + " OR " + counts.get(2).getName() + ")";
-    	query.addFilterQuery("username_ss:" + categoriesFilter);
+    	//Add weight on the terms according to their facet count
+    	query.setQuery("username_ss:" + counts.get(0).getName() + "^" + counts.get(0).getCount() + " OR "
+    			+ "username_ss:" + counts.get(1).getName() + "^" + counts.get(1).getCount() + " OR" 
+    			+ "username_ss:" + counts.get(2).getName() + "^" + counts.get(2).getCount() + " NOT username_ss:" + username);
+    	query.setFields("id, username_ss, cat_ss, userCount_i");
     	query.addSort("userCount_i", ORDER.desc);
     	query.set("rows", 3);
     	QueryResponse response;
@@ -117,12 +118,12 @@ public class SolrUtil {
      */
     public static QueryResponse getMatchingUsers(String username, List<FacetField> categories){
     	SolrQuery query = new SolrQuery();
-    	query.setQuery("*:* NOT username_ss:" + username);
-    	query.setFields("username_ss");
-    	query.addFilterQuery("-username_ss:"+ username);
     	List<Count> counts = categories.get(0).getValues();
-    	String categoriesFilter = "(" + counts.get(0).getName() + " OR " + counts.get(1).getName() + " OR " + counts.get(2).getName() + ")";
-    	query.addFilterQuery("cat_ss:" + categoriesFilter);
+    	//Add weight on the terms according to their facet count
+    	query.setQuery("cat_ss:" + counts.get(0).getName() + "^" + counts.get(0).getCount() + " OR "
+    			+ "cat_ss:" + counts.get(1).getName() + "^" + counts.get(1).getCount() + " OR" 
+    			+ "cat_ss:" + counts.get(2).getName() + "^" + counts.get(2).getCount() + " NOT username_ss:" + username);
+    	query.setFields("username_ss");
     	query.addFacetField("username_ss");
     	query.setFacetLimit(3);
     	QueryResponse response;
